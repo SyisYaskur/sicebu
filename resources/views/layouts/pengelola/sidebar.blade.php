@@ -23,22 +23,35 @@
 
     <!-- Judul Menu -->
     <li class="menu-header small text-uppercase">
-      <span class="menu-header-text">Laporan</span>
+      <span class="menu-header-text">penyaluran</span>
     </li>
 
-    <!-- Laporan Pemasukan -->
-    <li class="menu-item"> {{-- Tambahkan logic 'active' nanti --}}
-      <a href="#" class="menu-link"> {{-- Ganti # dengan route laporan pengelola --}}
-        <i class="menu-icon tf-icons bx bx-log-in-circle"></i>
-        <div class="text-truncate" data-i18n="Pemasukan">Laporan Pemasukan</div>
+    <li class="menu-item {{ request()->routeIs('pengelola.disbursements.*') ? 'active' : '' }}">
+      <a href="{{ route('pengelola.disbursements.index') }}" class="menu-link">
+        <i class="menu-icon tf-icons bx bx-transfer"></i> {{-- Ikon Transfer --}}
+        <div class="text-truncate" data-i18n="Penyaluran">Penyaluran Dana</div>
       </a>
     </li>
 
+    <!-- Judul Menu -->
+    <li class="menu-header small text-uppercase">
+      <span class="menu-header-text">Laporan</span>
+    </li>
+
+<!-- Laporan Pemasukan -->
+<li class="menu-item {{ request()->routeIs('pengelola.income-recap.index') ? 'active' : '' }}">
+  <a href="{{ route('pengelola.income-recap.index') }}" class="menu-link">
+    <i class="menu-icon tf-icons bx bx-log-in-circle"></i>
+    <div class="text-truncate" data-i18n="Pemasukan">Rekap Pemasukan</div>
+  </a>
+</li>
+
+
     <!-- Laporan Pengeluaran -->
-    <li class="menu-item"> {{-- Tambahkan logic 'active' nanti --}}
-      <a href="#" class="menu-link"> {{-- Ganti # dengan route laporan pengelola --}}
-        <i class="menu-icon tf-icons bx bx-log-out-circle"></i>
-        <div class="text-truncate" data-i18n="Pengeluaran">Laporan Pengeluaran</div>
+    <li class="menu-item {{ request()->routeIs('pengelola.expense-recap.*') ? 'active' : '' }}">
+      <a href="{{ route('pengelola.expense-recap.index') }}" class="menu-link">
+        <i class="menu-icon tf-icons bx bx-spreadsheet"></i>
+        <div class="text-truncate" data-i18n="Rekap Pengeluaran">Rekap Pengeluaran</div>
       </a>
     </li>
     

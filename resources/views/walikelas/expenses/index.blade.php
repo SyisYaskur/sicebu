@@ -100,9 +100,18 @@
                             @endif
                         </td>
                         <td>
-                            <a href="{{ route('walikelas.expenses.edit', $expense->id) }}" class="btn btn-icon btn-sm btn-warning" title="Edit"><i class="bx bx-edit-alt"></i></a>
-                            <button type="button" class="btn btn-icon btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal-{{ $expense->id }}" title="Hapus"><i class="bx bx-trash"></i></button>
-                            @include('walikelas.expenses._delete_modal', ['expense' => $expense])
+                            {{-- Cek apakah ini pengeluaran manual Wali Kelas atau dari Pengelola --}}
+                            @if($expense->recipient == 'Pengelola Keuangan')
+                                {{-- Jika dari Pengelola, Tampilkan Badge Terkunci --}}
+                                <span class="badge bg-label-secondary" title="Data ini dikelola oleh Pengelola Keuangan">
+                                    <i class="bx bx-lock-alt"></i> Terkunci
+                                </span>
+                            @else
+                                {{-- Jika manual, tampilkan tombol Edit & Hapus --}}
+                                <a href="{{ route('walikelas.expenses.edit', $expense->id) }}" class="btn btn-icon btn-sm btn-warning" title="Edit"><i class="bx bx-edit-alt"></i></a>
+                                <button type="button" class="btn btn-icon btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal-{{ $expense->id }}" title="Hapus"><i class="bx bx-trash"></i></button>
+                                @include('walikelas.expenses._delete_modal', ['expense' => $expense])
+                            @endif
                         </td>
                     </tr>
                     @empty

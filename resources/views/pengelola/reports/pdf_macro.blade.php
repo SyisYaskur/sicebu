@@ -34,7 +34,7 @@
             @foreach($recapData as $row)
             <tr>
                 <td style="text-align: center;">{{ $no++ }}</td>
-                <td>{{ $row->name }}</td>
+                <td>{{ $row->full_name }}</td>
                 <td>{{ $row->teacher_name }}</td>
                 <td class="text-right">{{ number_format($row->incomes_sum_amount, 0, ',', '.') }}</td>
                 <td class="text-right">{{ number_format($row->expenses_sum_amount, 0, ',', '.') }}</td>

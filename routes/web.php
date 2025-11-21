@@ -14,10 +14,13 @@ use App\Http\Controllers\WaliKelas\MyClassController;
 use App\Http\Controllers\WaliKelas\ProfileController;
 use App\Http\Controllers\SuperAdmin\StudentController;
 use App\Http\Controllers\WaliKelas\DashboardController;
+use App\Http\Controllers\Pengelola\IncomeRecapController;
 use App\Http\Controllers\WaliKelas\DailyIncomeController;
+use App\Http\Controllers\Pengelola\DisbursementController;
+use App\Http\Controllers\Pengelola\ExpenseRecapController;
+use App\Http\Controllers\Pengelola\ReportController as PengelolaReportController;
 use App\Http\Controllers\Pengelola\ProfileController as PengelolaProfileController;
 use App\Http\Controllers\SuperAdmin\ProfileController as SuperAdminProfileController;
-use App\Http\Controllers\Pengelola\ReportController as PengelolaReportController;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('welcome');
 
@@ -94,6 +97,12 @@ Route::middleware(['auth', 'role:pengelola'])->prefix('pengelola')->name('pengel
     Route::post('profile/avatar', [PengelolaProfileController::class, 'updateAvatar'])->name('profile.avatar');
     Route::get('reports', [PengelolaReportController::class, 'index'])->name('reports.index');
     Route::get('reports/pdf', [PengelolaReportController::class, 'downloadPDF'])->name('reports.pdf');
+    Route::resource('disbursements', \App\Http\Controllers\Pengelola\DisbursementController::class);
+    Route::get('disbursements/{disbursement}/pdf', [\App\Http\Controllers\Pengelola\DisbursementController::class, 'downloadPDF'])->name('disbursements.pdf');
+    Route::get('income-recap', [IncomeRecapController::class, 'index'])->name('income-recap.index');
+    Route::get('income-recap/pdf', [IncomeRecapController::class, 'downloadPDF'])->name('income-recap.pdf');
+    Route::get('expense-recap', [ExpenseRecapController::class, 'index'])->name('expense-recap.index');
+    Route::get('expense-recap/pdf', [ExpenseRecapController::class, 'downloadPDF'])->name('expense-recap.pdf');
 });
 
 Route::middleware('auth')->group(function () {

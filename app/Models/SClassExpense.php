@@ -43,7 +43,7 @@
         }
 
         public function student()
-    {
-        return $this->belongsTo(RefStudent::class, 'student_id');
-    }
-    }
+        {
+            return $this->belongsTo(RefStudent::class, 'student_id');
+        }
+        }

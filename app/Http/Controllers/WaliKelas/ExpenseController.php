@@ -116,6 +116,10 @@ class ExpenseController extends Controller
         if (!$class || $expense->class_id !== $class->id) {
             abort(403, 'Anda tidak memiliki akses ke data ini.');
         }
+
+        if ($expense->recipient == 'Pengelola Keuangan') {
+        return redirect()->route('walikelas.expenses.index')->with('error', 'Data penyaluran dana tidak dapat diedit oleh Wali Kelas.');
+    }
         
         $recipients = $this->recipients;
         // REVISI: Ambil daftar siswa untuk dropdown
@@ -130,6 +134,9 @@ class ExpenseController extends Controller
         if (!$class || $expense->class_id !== $class->id) {
             abort(403, 'Anda tidak memiliki akses ke data ini.');
         }
+        if ($expense->recipient == 'Pengelola Keuangan') {
+    return redirect()->route('walikelas.expenses.index')->with('error', 'Data penyaluran dana tidak dapat diubah/dihapus oleh Wali Kelas.');
+}
         
         $validated = $request->validate([
             'expense_date' => 'required|date',
@@ -180,6 +187,9 @@ class ExpenseController extends Controller
         if (!$class || $expense->class_id !== $class->id) {
             return redirect()->route('walikelas.expenses.index')->with('error', 'Anda tidak memiliki akses.');
         }
+        if ($expense->recipient == 'Pengelola Keuangan') {
+    return redirect()->route('walikelas.expenses.index')->with('error', 'Data penyaluran dana tidak dapat diubah/dihapus oleh Wali Kelas.');
+}
 
         try {
             if ($expense->proof_image) {
