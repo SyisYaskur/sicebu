@@ -34,4 +34,13 @@ class RefStudentAcademicYear extends Model
     {
         return $this->belongsTo(RefClass::class, 'class_id');
     }
+
+    /**
+     * Relasi ke tabel ref_classes
+     */
+    public function classRoom()
+    {
+        // Pastikan nama foreign key 'class_id' sesuai dengan yang ada di database
+        return $this->belongsTo(RefClass::class, 'class_id');
+    }
 }

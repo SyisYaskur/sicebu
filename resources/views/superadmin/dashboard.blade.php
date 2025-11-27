@@ -1,132 +1,97 @@
-@extends('layouts.admin.app') {{-- Menggunakan layout admin yang baru dibuat --}}
+@extends('layouts.admin.app')
 
-@section('title', 'Dashboard Super Admin') {{-- Judul halaman spesifik --}}
+@section('title', 'Dashboard Super Admin')
 
 @section('content')
-<div class="container-fluid px-4">
-    <h1 class="mt-4">Dashboard Super Admin</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item active">Dashboard</li>
-    </ol>
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="fw-bold py-3 mb-4">Dashboard Super Admin</h4>
 
-    <div class="row">
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-primary text-white mb-4">
-                <div class="card-body">Jumlah Kelas</div>
-                <div class="card-footer d-flex align-items-center justify-content-between">
-                    <span class="small text-white stretched-link">X Kelas</span>
-                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+    <div class="row g-4 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span>Total Pengguna</span>
+                            <div class="d-flex align-items-end mt-2">
+                                <h3 class="mb-0 me-2">{{ $stats['total_users'] }}</h3>
+                            </div>
+                            <small>Guru, Admin, Pengelola</small>
+                        </div>
+                        <span class="badge bg-label-primary rounded p-2">
+                            <i class="bx bx-user bx-sm"></i>
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-warning text-white mb-4">
-                <div class="card-body">Total Pemasukan</div>
-                <div class="card-footer d-flex align-items-center justify-content-between">
-                     <span class="small text-white stretched-link">Rp X</span>
-                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span>Total Siswa</span>
+                            <div class="d-flex align-items-end mt-2">
+                                <h3 class="mb-0 me-2">{{ $stats['total_students'] }}</h3>
+                            </div>
+                            <small>Terdata di sistem</small>
+                        </div>
+                        <span class="badge bg-label-info rounded p-2">
+                            <i class="bx bx-group bx-sm"></i>
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-success text-white mb-4">
-                <div class="card-body">Total Pengeluaran</div>
-                <div class="card-footer d-flex align-items-center justify-content-between">
-                    <span class="small text-white stretched-link">Rp X</span>
-                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span>Total Kelas</span>
+                            <div class="d-flex align-items-end mt-2">
+                                <h3 class="mb-0 me-2">{{ $stats['total_classes'] }}</h3>
+                            </div>
+                            <small>Kelas Aktif</small>
+                        </div>
+                        <span class="badge bg-label-warning rounded p-2">
+                            <i class="bx bx-chalkboard bx-sm"></i>
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-danger text-white mb-4">
-                <div class="card-body">Jumlah Pengguna</div>
-                <div class="card-footer d-flex align-items-center justify-content-between">
-                    <span class="small text-white stretched-link">X User</span>
-                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span>Wali Kelas Aktif</span>
+                            <div class="d-flex align-items-end mt-2">
+                                <h3 class="mb-0 me-2">{{ $stats['active_homerooms'] }}</h3>
+                            </div>
+                            <small>Dari {{ $stats['total_classes'] }} kelas</small>
+                        </div>
+                        <span class="badge bg-label-success rounded p-2">
+                            <i class="bx bx-id-card bx-sm"></i>
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card mb-4">
+    <div class="card">
         <div class="card-header">
-            <i class="fas fa-chart-area me-1"></i>
-            Grafik Pemasukan (Contoh)
-        </div>
-        <div class="card-body"><canvas id="myAreaChart" width="100%" height="40"></canvas></div>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-header">
-            <i class="fas fa-table me-1"></i>
-            Data Terbaru (Contoh)
+            <h5 class="mb-0">Status Sistem</h5>
         </div>
         <div class="card-body">
-            <p>Ini adalah area konten utama dashboard Super Admin.</p>
-            <p>Anda bisa menambahkan grafik, tabel ringkasan, atau informasi penting lainnya di sini.</p>
+            <p>Sistem SICEBU berjalan dengan baik. Gunakan menu di samping untuk mengelola data master.</p>
+            <a href="{{ route('superadmin.classes.index') }}" class="btn btn-primary">Kelola Kelas & Wali Kelas</a>
         </div>
     </div>
 </div>
 @endsection
-
-@push('scripts')
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
-    <script>
-        Contoh sederhana untuk chart
-        Set new default font family and font color to mimic Bootstrap's default styling
-        Chart.defaults.global.defaultFontFamily = '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
-        Chart.defaults.global.defaultFontColor = '#292b2c';
-
-        // Area Chart Example (ganti dengan data Anda)
-        var ctx = document.getElementById("myAreaChart");
-        var myLineChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ["Mar 1", "Mar 2", "Mar 3", "Mar 4", "Mar 5", "Mar 6", "Mar 7", "Mar 8", "Mar 9", "Mar 10", "Mar 11", "Mar 12", "Mar 13"],
-            datasets: [{
-            label: "Sessions",
-            lineTension: 0.3,
-            backgroundColor: "rgba(2,117,216,0.2)",
-            borderColor: "rgba(2,117,216,1)",
-            pointRadius: 5,
-            pointBackgroundColor: "rgba(2,117,216,1)",
-            pointBorderColor: "rgba(255,255,255,0.8)",
-            pointHoverRadius: 5,
-            pointHoverBackgroundColor: "rgba(2,117,216,1)",
-            pointHitRadius: 50,
-            pointBorderWidth: 2,
-            data: [10000, 30162, 26263, 18394, 18287, 28682, 31274, 33259, 25849, 24159, 32651, 31984, 38451],
-            }],
-        },
-        options: {
-            scales: {
-            xAxes: [{
-                time: {
-                unit: 'date'
-                },
-                gridLines: {
-                display: false
-                },
-                ticks: {
-                maxTicksLimit: 7
-                }
-            }],
-            yAxes: [{
-                ticks: {
-                min: 0,
-                max: 40000,
-                maxTicksLimit: 5
-                },
-                gridLines: {
-                color: "rgba(0, 0, 0, .125)",
-                }
-            }],
-            },
-            legend: {
-            display: false
-            }
-        }
-        });
-        console.log("Chart placeholder loaded."); // Pesan konfirmasi
-    </script>
-@endpush

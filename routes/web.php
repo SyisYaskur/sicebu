@@ -21,6 +21,8 @@ use App\Http\Controllers\Pengelola\ExpenseRecapController;
 use App\Http\Controllers\Pengelola\ReportController as PengelolaReportController;
 use App\Http\Controllers\Pengelola\ProfileController as PengelolaProfileController;
 use App\Http\Controllers\SuperAdmin\ProfileController as SuperAdminProfileController;
+use App\Http\Controllers\Pengelola\DashboardController as PengelolaDashboard;
+use App\Http\Controllers\SuperAdmin\DashboardController as AdminDashboard;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('welcome');
 
@@ -58,9 +60,7 @@ Route::get('/dashboard', function () {
 
 // Grup Route untuk Super Admin
 Route::middleware(['auth', 'role:super-admin'])->prefix('superadmin')->name('superadmin.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('superadmin.dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
     Route::resource('users', UserController::class);
     Route::resource('classes', ClassController::class);
     Route::resource('students', StudentController::class);
@@ -68,6 +68,8 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('superadmin')->name('sup
     Route::put('profile', [SuperAdminProfileController::class, 'updateProfile'])->name('profile.update');
     Route::put('profile/password', [SuperAdminProfileController::class, 'updatePassword'])->name('profile.password');
     Route::post('profile/avatar', [SuperAdminProfileController::class, 'updateAvatar'])->name('profile.avatar');
+    Route::post('classes/{class}/students', [ClassController::class, 'addStudent'])->name('classes.addStudent');
+    Route::delete('classes/{class}/students/{student}', [ClassController::class, 'removeStudent'])->name('classes.removeStudent');
 });
 
 // Grup Route untuk Wali Kelas
@@ -88,9 +90,7 @@ Route::middleware(['auth', 'role:guru'])->prefix('walikelas')->name('walikelas.'
 
 // Grup Route untuk Pengelola Keuangan
 Route::middleware(['auth', 'role:pengelola'])->prefix('pengelola')->name('pengelola.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('pengelola.dashboard'); // Arahkan ke view baru
-    })->name('dashboard');
+    Route::get('/dashboard', [PengelolaDashboard::class, 'index'])->name('dashboard');
     Route::get('profile', [PengelolaProfileController::class, 'show'])->name('profile.show');
     Route::put('profile', [PengelolaProfileController::class, 'updateProfile'])->name('profile.update');
     Route::put('profile/password', [PengelolaProfileController::class, 'updatePassword'])->name('profile.password');

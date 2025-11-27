@@ -4,17 +4,17 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RefStudent;
-use App\Models\RefClass; // Untuk dropdown kelas
-use App\Models\RefStudentAcademicYear; // Untuk update pivot
+use App\Models\RefClass;
+use App\Models\RefStudentAcademicYear;
+use App\Models\SClassIncome;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule; // Untuk validasi unique saat update
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class StudentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $search = $request->input('search');
@@ -23,136 +23,187 @@ class StudentController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('full_name', 'like', "%{$search}%")
-                  ->orWhere('student_number', 'like', "%{$search}%") // Cari NIS
-                  ->orWhere('national_student_number', 'like', "%{$search}%") // KEMBALIKAN: Cari NISN
-                  ->orWhere('national_identification_number', 'like', "%{$search}%"); // Cari NIK
+                  ->orWhere('student_number', 'like', "%{$search}%")
+                  ->orWhere('national_student_number', 'like', "%{$search}%")
+                  ->orWhere('national_identification_number', 'like', "%{$search}%");
             });
         }
 
-        // Anda mungkin perlu menyesuaikan tahun ajaran ini atau membuatnya dinamis
-        $currentAcademicYear = '2025/2026'; // Ganti dengan cara dinamis jika perlu
-
-        $students = $query->with(['classes' => function ($q) use ($currentAcademicYear) {
-                            $q->where('ref_student_academic_years.academic_year', $currentAcademicYear);
-                         }])
-                         ->latest('created_at')
-                         ->paginate(15)
-                         ->withQueryString();
-
-        return view('superadmin.students.index', compact('students', 'search', 'currentAcademicYear'));
+        $students = $query->orderBy('full_name')->paginate(15)->withQueryString();
+        return view('superadmin.students.index', compact('students', 'search'));
     }
 
-    /**
-     * Show the form for creating a new resource. (Jika diperlukan)
-     */
     public function create()
     {
-        // $classes = RefClass::orderBy('name')->get(); // Ambil kelas jika perlu assign saat create
-        // return view('superadmin.students.create', compact('classes'));
-        // Untuk saat ini, kita fokus pada edit. Jika butuh create, uncomment dan buat viewnya.
-         return redirect()->route('superadmin.students.index')->with('info', 'Penambahan siswa baru sebaiknya melalui proses impor data.');
+        $currentYear = '2025/2026'; 
+        $classes = RefClass::where('academic_year', $currentYear)->orderBy('name')->get();
+        return view('superadmin.students.create', compact('classes', 'currentYear'));
     }
 
-    /**
-     * Store a newly created resource in storage. (Jika diperlukan)
-     */
     public function store(Request $request)
     {
-        // Logika untuk menyimpan siswa baru
-        // $request->validate([...]);
-        // RefStudent::create([...]);
-        // RefStudentAcademicYear::create([...]); // Assign kelas jika ada
-        // return redirect()->route('superadmin.students.index')->with('success', 'Siswa berhasil ditambahkan.');
-    }
-
-    /**
-     * Display the specified resource. (Halaman Detail - Opsional)
-     */
-    public function show(RefStudent $student)
-    {
-        // Sama seperti kelas, bisa redirect ke edit
-         return redirect()->route('superadmin.students.edit', $student);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(RefStudent $student)
-    {
-        // Ambil SEMUA kelas untuk tahun ajaran TERKINI (untuk dropdown pindah kelas)
-        // Sesuaikan cara mendapatkan tahun ajaran terkini
-        $currentAcademicYear = '2025/2026'; // Ganti dengan cara dinamis
-        $classes = RefClass::where('academic_year', $currentAcademicYear)->orderBy('name')->get();
-
-        // Ambil data assignment kelas siswa saat ini untuk tahun ajaran ini
-        $currentAssignment = RefStudentAcademicYear::where('student_id', $student->id)
-                                                    ->where('academic_year', $currentAcademicYear)
-                                                    ->first();
-
-        return view('superadmin.students.edit', compact('student', 'classes', 'currentAssignment', 'currentAcademicYear'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, RefStudent $student)
-    {
-        // Sesuaikan validasi dengan kolom di ref_students yang ingin diedit
-         $validatedData = $request->validate([
+        $validated = $request->validate([
             'full_name' => 'required|string|max:255',
-            'student_number' => ['nullable','string','max:255', Rule::unique('ref_students')->ignore($student->id)],
-            'national_student_number' => ['nullable','string','max:255', Rule::unique('ref_students')->ignore($student->id)],
-            'national_identification_number' => ['nullable','string','max:255', Rule::unique('ref_students')->ignore($student->id)],
-            'gender' => 'nullable|string|in:Laki-Laki,Perempuan',
-            'religion' => 'nullable|string|max:255',
-            'birth_place_date' => 'nullable|string|max:255', // Mungkin perlu dipisah?
+            'student_number' => 'nullable|string|unique:ref_students,student_number',
+            'national_student_number' => 'nullable|string|unique:ref_students,national_student_number',
+            'national_identification_number' => 'nullable|string|unique:ref_students,national_identification_number',
+            'gender' => 'required|in:Laki-Laki,Perempuan',
+            'birth_place_date' => 'nullable|string',
+            'religion' => 'nullable|string',
             'address' => 'nullable|string',
-            // Tambahkan validasi kolom lain yang ingin diedit
-            // Validasi untuk assignment kelas
-            'academic_year' => 'required|string', // Tahun ajaran target
-            'class_id' => 'nullable|string|exists:ref_classes,id', // Kelas baru (atau kosong jika dihapus)
+            'guardian_name' => 'nullable|string',
+            'guardian_phone' => 'nullable|string',
+            'mother_name' => 'nullable|string',
+            'class_id' => 'nullable|exists:ref_classes,id',
         ]);
 
-        // Pisahkan data assignment kelas
-        $academicYear = $validatedData['academic_year'];
-        $newClassId = $validatedData['class_id'];
-        unset($validatedData['academic_year'], $validatedData['class_id']);
+        $student = null;
 
-        // Tambahkan updated_by
-        $validatedData['updated_by'] = Auth::id();
+        DB::transaction(function () use ($validated, $request, &$student) {
+            // 1. Buat Siswa
+            $student = RefStudent::create([
+                'id' => (string) Str::uuid(),
+                'full_name' => $validated['full_name'],
+                'student_number' => $validated['student_number'] ?? null,
+                'national_student_number' => $validated['national_student_number'] ?? null,
+                'national_identification_number' => $validated['national_identification_number'] ?? null,
+                'gender' => $validated['gender'],
+                'birth_place_date' => $validated['birth_place_date'] ?? null,
+                'religion' => $validated['religion'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'guardian_name' => $validated['guardian_name'] ?? null,
+                'guardian_phone' => $validated['guardian_phone'] ?? null,
+                'mother_name' => $validated['mother_name'] ?? null,
+                'created_by' => Auth::id(),
+            ]);
 
-        // 1. Update data siswa di tabel ref_students
-        $student->update($validatedData);
+            // 2. Masukkan ke Kelas
+            if ($request->class_id) {
+                $class = RefClass::find($request->class_id);
+                RefStudentAcademicYear::create([
+                    'id' => (string) Str::uuid(),
+                    'student_id' => $student->id,
+                    'class_id' => $class->id,
+                    'academic_year' => $class->academic_year,
+                    'created_by' => Auth::id(),
+                ]);
+            }
+        });
 
-        // 2. Update assignment kelas di tabel ref_student_academic_years
-        RefStudentAcademicYear::updateOrCreate(
-            [
-                'student_id' => $student->id,
-                'academic_year' => $academicYear, // Filter berdasarkan tahun ajaran
-            ],
-            [
-                'class_id' => $newClassId, // Set kelas baru (bisa null jika dihapus)
-                'updated_by' => Auth::id(), // Atau created_by jika baru
-                // 'created_by' => Auth::id(), // Jika ingin set saat create saja
-            ]
-        );
-
-        return redirect()->route('superadmin.students.index')->with('success', 'Data siswa berhasil diperbarui.');
+        // REVISI 1: Redirect ke halaman SHOW (Detail Siswa)
+        return redirect()->route('superadmin.students.show', $student->id)
+                         ->with('success', 'Siswa berhasil ditambahkan.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    public function show(RefStudent $student)
+    {
+        $classHistory = $student->classAssignments()
+                                ->with('classRoom')
+                                ->orderByDesc('academic_year')
+                                ->get();
+        return view('superadmin.students.show', compact('student', 'classHistory'));
+    }
+
+    public function edit(RefStudent $student)
+    {
+        $currentYear = '2025/2026';
+        $currentClassAssign = $student->classAssignments()
+                                      ->where('academic_year', $currentYear)
+                                      ->first();
+        $classes = RefClass::where('academic_year', $currentYear)->orderBy('name')->get();
+
+        return view('superadmin.students.edit', compact('student', 'classes', 'currentClassAssign', 'currentYear'));
+    }
+
+   public function update(Request $request, RefStudent $student)
+    {
+        // 1. Validasi Lengkap
+        $validated = $request->validate([
+            // Identitas
+            'full_name' => 'required|string|max:255',
+            'student_number' => ['nullable', Rule::unique('ref_students')->ignore($student->id)],
+            'national_student_number' => ['nullable', Rule::unique('ref_students')->ignore($student->id)],
+            'national_identification_number' => ['nullable', Rule::unique('ref_students')->ignore($student->id)],
+            'gender' => 'required|in:Laki-Laki,Perempuan',
+            'birth_place_date' => 'nullable|string',
+            'religion' => 'nullable|string',
+            'address' => 'nullable|string',
+            'child_status' => 'nullable|string',
+            'birth_order' => 'nullable|string',
+            'siblings' => 'nullable|integer',
+
+            // Fisik & Minat
+            'blood_type' => 'nullable|string',
+            'height_cm' => 'nullable|numeric',
+            'weight_kg' => 'nullable|numeric',
+            'hobby' => 'nullable|string',
+            'aspiration' => 'nullable|string',
+
+            // Orang Tua (Ayah)
+            'guardian_name' => 'nullable|string',
+            'guardian_phone' => 'nullable|string',
+            'guardian_education' => 'nullable|string',
+            'guardian_occupation' => 'nullable|string',
+            'guardian_income' => 'nullable|numeric',
+
+            // Ibu
+            'mother_name' => 'nullable|string',
+            'mother_phone' => 'nullable|string',
+            'mother_education' => 'nullable|string',
+            'mother_occupation' => 'nullable|string',
+            'mother_income' => 'nullable|numeric',
+
+            // Wali (Custodian)
+            'custodian_name' => 'nullable|string',
+            'custodian_phone' => 'nullable|string',
+            'custodian_education' => 'nullable|string',
+            'custodian_occupation' => 'nullable|string',
+
+            // Kelas
+            'class_id' => 'nullable|exists:ref_classes,id',
+        ]);
+
+        DB::transaction(function () use ($validated, $request, $student) {
+            // 2. Update Data Siswa (Semua field selain class_id)
+            // array_diff_key membuang 'class_id' dari array data siswa
+            $student->update(array_diff_key($validated, ['class_id' => '']));
+
+            // 3. Update Perpindahan Kelas
+            $currentYear = '2025/2026'; // Sebaiknya dinamis
+            
+            if ($request->filled('class_id')) {
+                RefStudentAcademicYear::updateOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'academic_year' => $currentYear
+                    ],
+                    [
+                        'id' => (string) Str::uuid(), // Generate UUID jika create baru
+                        'class_id' => $request->class_id,
+                        'updated_by' => Auth::id()
+                    ]
+                );
+            } else {
+                // Jika dikosongkan, hapus dari kelas tahun ini
+                RefStudentAcademicYear::where('student_id', $student->id)
+                                      ->where('academic_year', $currentYear)
+                                      ->delete();
+            }
+        });
+
+        // Redirect ke SHOW sesuai request Anda
+        return redirect()->route('superadmin.students.show', $student->id)
+                         ->with('success', 'Data lengkap siswa berhasil diperbarui.');
+    }
+
     public function destroy(RefStudent $student)
     {
-         try {
-            // Hapus juga assignment kelasnya (opsional, tergantung kebutuhan)
-            RefStudentAcademicYear::where('student_id', $student->id)->delete();
-
+        DB::transaction(function () use ($student) {
+            $student->classAssignments()->delete();
+            SClassIncome::where('student_id', $student->id)->delete();
             $student->delete();
-            return redirect()->route('superadmin.students.index')->with('success', 'Siswa berhasil dihapus.');
-        } catch (\Exception $e) {
-            return redirect()->route('superadmin.students.index')->with('error', 'Gagal menghapus siswa. Error: ' . $e->getMessage());
-        }
+        });
+
+        return redirect()->route('superadmin.students.index')->with('success', 'Data siswa berhasil dihapus.');
     }
 }

@@ -10,34 +10,69 @@ class RefStudent extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $table = 'ref_students'; // Nama tabel
+    protected $table = 'ref_students';
     public $incrementing = false;
     protected $keyType = 'string';
     protected $primaryKey = 'id';
 
-    // Sesuaikan $fillable dengan kolom yang relevan di tabel ref_students
+    /**
+     * DAFTAR LENGKAP KOLOM YANG BISA DIEDIT
+     */
     protected $fillable = [
-        'user_id', 'no', 'student_id', 'student_number', 'national_student_number',
-        'national_identification_number', 'full_name', 'birth_place_date', 'gender',
-        'religion', /* ... tambahkan kolom lain jika perlu ... */ 'created_by', 'updated_by',
+        'id', 'user_id', 'created_by', 'updated_by',
+        
+        // Identitas Utama
+        'full_name',
+        'student_number', // NIS
+        'national_student_number', // NISN
+        'national_identification_number', // NIK
+        'gender',
+        'birth_place_date',
+        'religion',
+        'address',
+        'child_status', // Anak kandung/tiri/angkat
+        'birth_order', // Anak ke-
+        'siblings', // Jumlah saudara
+
+        // Data Fisik
+        'blood_type',
+        'height_cm',
+        'weight_kg',
+        
+        // Minat
+        'hobby',
+        'aspiration',
+
+        // Data Ayah / Wali
+        'guardian_name',
+        'guardian_education',
+        'guardian_occupation',
+        'guardian_income',
+        'guardian_phone',
+
+        // Data Ibu
+        'mother_name',
+        'mother_education',
+        'mother_occupation',
+        'mother_income',
+        'mother_phone',
+
+        // Data Wali (Custodian) - Jika tinggal dengan wali selain ortu
+        'custodian_name',
+        'custodian_phone',
+        'custodian_occupation',
+        'custodian_education',
     ];
 
-    /**
-     * Relasi ke tabel pivot ref_student_academic_years
-     * Menunjukkan kelas mana saja yang pernah diikuti siswa
-     */
     public function classAssignments()
     {
         return $this->hasMany(RefStudentAcademicYear::class, 'student_id');
     }
-
-     /**
-     * Relasi Many-to-Many ke RefClass melalui pivot table
-     */
+    
     public function classes()
     {
         return $this->belongsToMany(RefClass::class, 'ref_student_academic_years', 'student_id', 'class_id')
-                    ->withPivot('academic_year') // Penting untuk filter tahun ajaran
-                    ->withTimestamps(); // Jika tabel pivot punya created_at/updated_at
+                    ->withPivot('academic_year')
+                    ->withTimestamps();
     }
 }

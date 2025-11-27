@@ -1,105 +1,117 @@
 @extends('layouts.admin.app')
-
-@section('title', 'Detail Kelas: ' . $class->name)
+@section('title', 'Detail Kelas: ' . $class->full_name)
 
 @section('content')
-<div class="container-fluid px-4">
-    <h1 class="mt-4">Detail Kelas: {{ $class->name }}</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="{{ route('superadmin.dashboard') }}">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="{{ route('superadmin.classes.index') }}">Kelas</a></li>
-        <li class="breadcrumb-item active">Detail</li>
-    </ol>
+<div class="container-xxl flex-grow-1 container-p-y">
 
-    {{-- Card Informasi Kelas --}}
-    <div class="card mb-4">
-        <div class="card-header">
-            <i class="fas fa-info-circle me-1"></i> Informasi Kelas
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <dl class="row">
-                        <dt class="col-sm-4">Nama Kelas</dt>
-                        <dd class="col-sm-8">{{ $class->name }}</dd>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold py-3 mb-0">
+            <span class="text-muted fw-light">Master Kelas /</span> Detail Kelas
+        </h4>
+        <a href="{{ route('superadmin.classes.index') }}" class="btn btn-secondary">
+            <i class="bx bx-arrow-back me-1"></i> Kembali
+        </a>
+    </div>
 
-                        <dt class="col-sm-4">Tingkat</dt>
-                        <dd class="col-sm-8">{{ $class->academic_level ?? '-' }}</dd>
+    @include('components.alert')
 
-                        <dt class="col-sm-4">Thn. Akademik</dt>
-                        <dd class="col-sm-8">{{ $class->academic_year ?? '-' }}</dd>
-
-                        <dt class="col-sm-4">Program Keahlian</dt>
-                        <dd class="col-sm-8">{{ $class->expertiseProgram?->name ?? '-' }}</dd>
-
-                        <dt class="col-sm-4">Konsentrasi</dt>
-                        <dd class="col-sm-8">{{ $class->expertiseConcentration?->name ?? '-' }}</dd>
-                    </dl>
+    <div class="row">
+        {{-- 1. INFORMASI KELAS LENGKAP --}}
+        <div class="col-md-12 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-white">Informasi Kelas: {{ $class->full_name }}</h5>
+                    <a href="{{ route('superadmin.classes.edit',[$class->id, 'redirect' => 'show']) }}" class="btn btn-sm btn-light text-primary fw-bold">
+                        <i class="bx bx-edit me-1"></i> Edit Data
+                    </a>
                 </div>
-                <div class="col-md-6">
-                     <dl class="row">
-                        <dt class="col-sm-4">Wali Kelas</dt>
-                        <dd class="col-sm-8">{{ $class->teacher_name ?? '-' }}</dd>
+                <div class="card-body mt-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Nama Kelas</dt>
+                                <dd class="col-sm-8">{{ $class->full_name }}</dd>
 
-                        <dt class="col-sm-4">NIP</dt>
-                        <dd class="col-sm-8">{{ $class->nip_number ?? '-' }}</dd>
+                                <dt class="col-sm-4">Tingkat</dt>
+                                <dd class="col-sm-8">{{ $class->academic_level }}</dd>
 
-                        <dt class="col-sm-4">NUPTK</dt>
-                        <dd class="col-sm-8">{{ $class->nuptk_number ?? '-' }}</dd>
+                                <dt class="col-sm-4">Thn. Akademik</dt>
+                                <dd class="col-sm-8"><span class="badge bg-label-primary">{{ $class->academic_year }}</span></dd>
 
-                        <dt class="col-sm-4">Jumlah Siswa</dt>
-                        <dd class="col-sm-8"><strong>{{ $students->count() }} Siswa</strong></dd>
-                     </dl>
+                                <dt class="col-sm-4">Program Keahlian</dt>
+                                <dd class="col-sm-8">{{ $class->expertiseProgram?->name ?? '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Konsentrasi</dt>
+                                <dd class="col-sm-8">{{ $class->expertiseConcentration?->name ?? '-' }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Wali Kelas</dt>
+                                <dd class="col-sm-8 fw-bold text-primary">{{ $class->teacher_name ?? 'Belum Ditentukan' }}</dd>
+
+                                <dt class="col-sm-4">NIP Wali Kelas</dt>
+                                <dd class="col-sm-8">{{ $class->nip_number ?? '-' }}</dd>
+
+                                <dt class="col-sm-4">NUPTK Wali Kelas</dt>
+                                <dd class="col-sm-8">{{ $class->nuptk_number ?? '-' }}</dd>
+
+                                <dt class="col-sm-4">Jumlah Siswa</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-label-success fs-6">{{ $students->count() }} Siswa</span>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 2. TABEL SISWA DETAIL --}}
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Daftar Siswa Lengkap</h5>
+                </div>
+                <div class="table-responsive text-nowrap">
+                    <table class="table table-hover table-striped table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th width="5%" class="text-center">No</th>
+                                <th>NIS</th>
+                                <th>NISN</th>
+                                <th>Nama Lengkap</th>
+                                <th>Gender</th>
+                                <th>Tempat, Tgl Lahir</th>
+                                <th>Alamat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($students as $index => $student)
+                            <tr>
+                                <td class="text-center">{{ $index + 1 }}</td>
+                                <td>{{ $student->student_number ?? '-' }}</td>
+                                <td>{{ $student->national_student_number ?? '-' }}</td>
+                                <td><strong>{{ $student->full_name }}</strong></td>
+                                <td>{{ $student->gender ?? '-' }}</td>
+                                <td>{{ $student->birth_place_date ?? '-' }}</td>
+                                <td style="white-space: normal; max-width: 250px;">
+                                    {{ $student->address ?? '-' }}
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="bx bx-user-x fs-1 mb-2"></i><br>
+                                    Belum ada siswa yang terdaftar di kelas ini.
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
-
-     {{-- Card Daftar Siswa --}}
-    <div class="card mb-4">
-        <div class="card-header">
-            <i class="fas fa-users me-1"></i> Daftar Siswa di Kelas Ini ({{ $class->academic_year }})
-        </div>
-        <div class="card-body">
-             <div class="table-responsive">
-                <table class="table table-bordered table-hover table-striped"> {{-- Tambah striped --}}
-                    <thead>
-                        <tr>
-                            <th style="width: 5%;">No</th>
-                            <th style="width: 20%;">NISN / NIS</th>
-                            <th>Nama Lengkap</th>
-                            <th style="width: 15%;">Jenis Kelamin</th>
-                            {{-- Tambah kolom lain jika perlu --}}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($students as $index => $student)
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $student->national_student_number ?? ($student->student_number ?? '-') }}</td>
-                            <td>{{ $student->full_name }}</td>
-                            <td>{{ $student->gender ?? '-' }}</td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="4" class="text-center">Belum ada siswa yang terdaftar di kelas ini untuk tahun ajaran {{ $class->academic_year }}.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-     {{-- Tombol Aksi Bawah --}}
-     <div class="mt-3 d-flex justify-content-between">
-         <a href="{{ route('superadmin.classes.index') }}" class="btn btn-secondary">
-             <i class="fas fa-arrow-left"></i> Kembali ke Daftar Kelas
-         </a>
-         <a href="{{ route('superadmin.classes.edit', $class->id) }}" class="btn btn-warning">
-             <i class="fas fa-edit"></i> Edit Kelas & Siswa
-         </a>
-     </div>
-
 </div>
 @endsection

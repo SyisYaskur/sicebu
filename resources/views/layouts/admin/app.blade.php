@@ -1,183 +1,124 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<!doctype html>
+
+<html
+  lang="en"
+  class="light-style layout-menu-fixed layout-compact"
+  dir="ltr"
+  data-theme="theme-default"
+  data-assets-path="{{ asset('assets/') }}/"
+  data-template="vertical-menu-template-free"
+  data-style="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+
+    <title>@yield('title', 'Dashboard Super Admin') - {{ config('app.name', 'Laravel') }}</title>
+
+    <meta name="description" content="" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }} - @yield('title', 'Dashboard')</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ asset('assets/img/favicon/favicon.ico') }}" />
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
+      rel="stylesheet" />
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="{{ asset('assets/vendor/fonts/boxicons.css') }}" />
 
-    <style>
-        body {
-            display: flex;
-            min-height: 100vh;
-            flex-direction: column;
-        }
-        .main-wrapper {
-            display: flex;
-            flex-grow: 1;
-        }
-        #sidebar {
-            min-width: 250px;
-            max-width: 250px;
-            background: #343a40; /* Warna sidebar dark */
-            color: #fff;
-            transition: all 0.3s;
-            min-height: calc(100vh - 56px); /* Tinggi viewport dikurangi tinggi topbar */
-        }
-        #sidebar.toggled {
-            margin-left: -250px;
-        }
-        #content-wrapper {
-            width: 100%;
-            padding: 20px;
-            min-height: calc(100vh - 56px - 40px); /* Tinggi viewport - topbar - footer */
-            overflow-y: auto;
-        }
-        .sidebar-header {
-            padding: 20px;
-            background: #2c3136;
-        }
-        .sidebar-nav .nav-link {
-            color: rgba(255, 255, 255, 0.8);
-            padding: 10px 20px;
-        }
-        .sidebar-nav .nav-link:hover {
-            color: #fff;
-            background: #495057;
-        }
-        .sidebar-nav .nav-link .fa {
-            margin-right: 10px;
-        }
-        .footer {
-            background-color: #f8f9fa; /* Warna footer light */
-            padding: 10px 0;
-            text-align: center;
-            font-size: 0.9em;
-            color: #6c757d;
-            flex-shrink: 0; /* Mencegah footer mengecil */
-        }
-         /* Style untuk toggle button */
-        #sidebarCollapse {
-            color: rgba(255, 255, 255, 0.55);
-            border: none;
-            background: transparent;
-        }
-        #sidebarCollapse:hover {
-            color: rgba(255, 255, 255, 0.75);
-        }
-    </style>
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="{{ asset('assets/vendor/css/core.css') }}" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="{{ asset('assets/vendor/css/theme-default.css') }}" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="{{ asset('assets/css/demo.css') }}" />
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="bg-light">
+    <!-- Vendors CSS -->
+    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css') }}" />
+    
+    <!-- Helpers -->
+    <script src="{{ asset('assets/vendor/js/helpers.js') }}"></script>
+    <script src="{{ asset('assets/js/config.js') }}"></script>
 
-    <nav class="navbar navbar-expand navbar-dark bg-dark sticky-top">
-        <div class="container-fluid">
-            <button type="button" id="sidebarCollapse" class="btn btn-dark me-3">
-                <i class="fas fa-bars"></i>
-            </button>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+    
+    @stack('styles')
+  </head>
 
-            <a class="navbar-brand" href="{{ route('dashboard') }}">{{ config('app.name', 'Laravel') }}</a>
+  <body>
+    <div class="layout-wrapper layout-content-navbar">
+      <div class="layout-container">
+        
+        <!-- Menu (Sidebar) -->
+        @include('layouts.admin.sidebar')
+        <!-- / Menu -->
 
-            <form class="d-none d-md-inline-block form-inline ms-auto me-0 me-md-3 my-2 my-md-0">
-                <div class="input-group">
-                    <input class="form-control" type="text" placeholder="Search for..." aria-label="Search for..." aria-describedby="btnNavbarSearch" />
-                    <button class="btn btn-primary" id="btnNavbarSearch" type="button"><i class="fas fa-search"></i></button>
-                </div>
-            </form>
+        <div class="layout-page">
+          
+          <!-- Navbar (Topbar) -->
+          @include('layouts.admin.topbar')
+          <!-- / Navbar -->
 
-            <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" id="navbarDropdownUser" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-user fa-fw"></i> {{ Auth::user()->name ?? 'Guest' }}
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownUser">
-                        <li><a class="dropdown-item" href="#">Profil</a></li>
-                        <li><a class="dropdown-item" href="#">Pengaturan</a></li>
-                        <li><hr class="dropdown-divider" /></li>
-                        <li>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" class="dropdown-item">Logout</button>
-                            </form>
-                        </li>
-                    </ul>
-                </li>
-            </ul>
-        </div>
-    </nav>
-    <div class="main-wrapper">
-        <nav id="sidebar">
-            <div class="sidebar-header">
-                <h3>Menu Utama</h3>
-            </div>
-
-            <ul class="nav flex-column sidebar-nav">
-                <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="{{ route('superadmin.dashboard') }}">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('superadmin.classes.index') }}"> {{-- Arahkan ke route index --}}
-       <i class="fas fa-chalkboard-teacher"></i> Master Kelas
-    </a>
-    <li class="nav-item">
-    <a class="nav-link" href="{{ route('superadmin.students.index') }}"> {{-- Arahkan ke route index --}}
-       <i class="fas fa-user-graduate"></i> Master Siswa
-    </a>
-</li>
-                </li>
-                 <li class="nav-item">
-                    <a class="nav-link" href="#">
-                       <i class="fas fa-dollar-sign"></i> Master Pemasukan
-                    </a>
-                </li>
-                 <li class="nav-item">
-                    <a class="nav-link" href="#">
-                       <i class="fas fa-receipt"></i> Master Pengeluaran
-                    </a>
-                </li>
-                 <li class="nav-item">
-                    <a class="nav-link" href="#">
-                       <i class="fas fa-file-alt"></i> Laporan
-                    </a>
-                </li>
-                 <li class="nav-item">
-                    <a class="nav-link" href="{{ route('superadmin.profile.show') }}">
-                       <i class="fas fa-file-alt"></i> profil
-                    </a>
-                </li>
-                <li class="nav-item">
-    <a class="nav-link" href="{{ route('superadmin.users.index') }}"> {{-- Arahkan ke route index --}}
-       <i class="fas fa-users"></i> Manajemen User
-    </a>
-</li>
-                </ul>
-        </nav>
-        <div id="content-wrapper">
-            <main>
+          <div class="content-wrapper">
+            <!-- Content -->
+            <div class="container-xxl flex-grow-1 container-p-y">
                 @yield('content')
-            </main>
-        </div>
-        </div>
+            </div>
+            <!-- / Content -->
 
-     <footer class="footer mt-auto py-3 bg-light border-top">
-        <div class="container text-center">
-            <span class="text-muted">&copy; {{ date('Y') }} {{ config('app.name', 'Laravel') }}. All rights reserved.</span>
+            <!-- Footer -->
+            <footer class="content-footer footer bg-footer-theme">
+              <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
+                <div class="mb-2 mb-md-0">
+                  © <script> document.write(new Date().getFullYear()); </script>, {{ config('app.name', 'Laravel') }}
+                </div>
+              </div>
+            </footer>
+            <!-- / Footer -->
+
+            <div class="content-backdrop fade"></div>
+          </div>
         </div>
-    </footer>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+      </div>
+      <div class="layout-overlay layout-menu-toggle"></div>
+    </div>
+
+    <!-- Core JS -->
+    <script src="{{  asset('assets/vendor/libs/jquery/jquery.js') }}"></script>
+    <script src="{{  asset('assets/vendor/libs/popper/popper.js') }}"></script>
+    <script src="{{  asset('assets/vendor/js/bootstrap.js') }}"></script>
+    <script src="{{  asset('assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js') }}"></script>
+    <script src="{{  asset('assets/vendor/js/menu.js') }}"></script>
+    <script src="{{  asset('assets/js/main.js') }}"></script>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            document.getElementById('sidebarCollapse').addEventListener('click', function () {
-                document.getElementById('sidebar').classList.toggle('toggled');
-            });
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
         });
     </script>
-     @stack('scripts') </body>
+
+    @stack('scripts')
+
+    <!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- Inisialisasi Global Select2 -->
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: $(this).data('placeholder'),
+        });
+    });
+</script>
+  </body>
 </html>
