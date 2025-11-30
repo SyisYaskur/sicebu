@@ -23,6 +23,10 @@ use App\Http\Controllers\Pengelola\ProfileController as PengelolaProfileControll
 use App\Http\Controllers\SuperAdmin\ProfileController as SuperAdminProfileController;
 use App\Http\Controllers\Pengelola\DashboardController as PengelolaDashboard;
 use App\Http\Controllers\SuperAdmin\DashboardController as AdminDashboard;
+use App\Http\Controllers\SuperAdmin\IncomeController as AdminIncome;
+use App\Http\Controllers\SuperAdmin\ExpenseController as AdminExpense;
+use App\Http\Controllers\SuperAdmin\ExpenseController as AdminExpenseController;
+use App\Http\Controllers\SuperAdmin\ReportController as AdminReport;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('welcome');
 
@@ -70,6 +74,10 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('superadmin')->name('sup
     Route::post('profile/avatar', [SuperAdminProfileController::class, 'updateAvatar'])->name('profile.avatar');
     Route::post('classes/{class}/students', [ClassController::class, 'addStudent'])->name('classes.addStudent');
     Route::delete('classes/{class}/students/{student}', [ClassController::class, 'removeStudent'])->name('classes.removeStudent');
+    Route::resource('incomes', AdminIncome::class)->except(['show']);
+    Route::resource('expenses', AdminExpense::class)->except(['show']);
+    Route::resource('expenses', AdminExpenseController::class)->except(['show']);
+    Route::get('reports', [AdminReport::class, 'index'])->name('reports.index');
 });
 
 // Grup Route untuk Wali Kelas

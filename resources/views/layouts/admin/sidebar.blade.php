@@ -50,12 +50,25 @@
     <li class="menu-header small text-uppercase">
       <span class="menu-header-text">Keuangan</span>
     </li>
+
+    <li class="menu-item {{ request()->routeIs('superadmin.incomes.*') ? 'active' : '' }}">
+      <a href="{{ route('superadmin.incomes.index') }}" class="menu-link">
+        <i class="menu-icon tf-icons bx bx-wallet"></i>
+        <div class="text-truncate">Rekap Pemasukan</div>
+      </a>
+    </li>
+
+    <li class="menu-item {{ request()->routeIs('superadmin.expenses.*') ? 'active' : '' }}">
+      <a href="{{ route('superadmin.expenses.index') }}" class="menu-link">
+        <i class="menu-icon tf-icons bx bx-cart"></i>
+        <div class="text-truncate">Rekap Pengeluaran</div>
+      </a>
+    </li>
     
-    {{-- Nanti bisa ditambahkan menu untuk melihat laporan keuangan global --}}
-    <li class="menu-item">
-        <a href="#" class="menu-link">
-            <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
-<div class="text-truncate">Rekap Keuangan</div>
+    <li class="menu-item {{ request()->routeIs('superadmin.reports.*') ? 'active' : '' }}">
+        <a href="{{ route('superadmin.reports.index') }}" class="menu-link">
+            <i class="menu-icon tf-icons bx bxs-report"></i>
+            <div class="text-truncate">Pusat Laporan</div>
         </a>
     </li>
 

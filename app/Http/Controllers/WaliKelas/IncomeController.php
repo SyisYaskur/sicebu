@@ -4,6 +4,7 @@ namespace App\Http\Controllers\WaliKelas;
 
 use App\Http\Controllers\Controller;
 use App\Models\SClassIncome;
+use App\Models\SClassExpense;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -22,13 +23,15 @@ class IncomeController extends Controller
         }
 
         $incomes = SClassIncome::where('class_id', $class->id)
-                                ->with('creator') // Ambil data pembuat
-                                ->latest('date')
-                                ->paginate(20);
-
+        ->with('creator') // Ambil data pembuat
+        ->latest('date')
+        ->paginate(20);
+        
+        $totalExpense = SClassExpense::where('class_id', $class->id)->sum('amount');
         $totalIncome = SClassIncome::where('class_id', $class->id)->sum('amount');
+        $balance = $totalIncome - $totalExpense;
 
-        return view('walikelas.incomes.index', compact('class', 'incomes', 'totalIncome'));
+        return view('walikelas.incomes.index', compact('class', 'incomes', 'totalIncome', 'totalExpense', 'balance'));
     }
 
     public function create()
