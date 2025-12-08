@@ -17,13 +17,31 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class DisbursementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $disbursements = SDisbursement::with('creator')
-    ->orderBy('created_at', 'desc')
-    ->paginate(10);
+        // Ambil keyword pencarian
+        $search = $request->input('search');
 
-        return view('pengelola.disbursements.index', compact('disbursements'));
+        // Query Builder
+        $query = SDisbursement::with('creator');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                // Cari berdasarkan Tujuan
+                $q->where('purpose', 'like', "%{$search}%")
+                  // Cari berdasarkan Tanggal (format YYYY-MM-DD)
+                  ->orWhere('disbursement_date', 'like', "%{$search}%")
+                  // Cari berdasarkan Catatan
+                  ->orWhere('notes', 'like', "%{$search}%");
+            });
+        }
+
+        // Urutkan dan Paginate
+        $disbursements = $query->latest('disbursement_date')
+                               ->paginate(10)
+                               ->withQueryString(); // Agar parameter search tidak hilang saat pindah halaman
+
+        return view('pengelola.disbursements.index', compact('disbursements', 'search'));
     }
 
     private function getClassesWithBalance()

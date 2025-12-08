@@ -14,9 +14,6 @@
                 <li class="nav-item">
                     <a class="nav-link active" href="javascript:void(0);"><i class="bx bx-user me-1"></i> Akun</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="javascript:void(0);"><i class="bx bx-lock-alt me-1"></i> Keamanan</a>
-                </li>
             </ul>
 
             <div class="row">

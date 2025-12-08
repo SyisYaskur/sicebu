@@ -83,4 +83,9 @@ class RefClass extends Model
     {
         return $this->academic_level . ' ' . $this->name;
     }
+
+    public function user()
+    {
+        return $this->hasOne(User::class, 'class_id');
+    }
 }

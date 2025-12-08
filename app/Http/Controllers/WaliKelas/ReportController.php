@@ -24,27 +24,28 @@ class ReportController extends Controller
 
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
+        $showChart = $request->boolean('show_chart');
 
-        $incomes = null;
-        $expenses = null;
+        $incomes = collect([]);
+        $expenses = collect([]);
         $stats = null;
+        $chartData = null;
 
-        // Hanya jalankan query jika kedua tanggal sudah diisi
         if ($startDate && $endDate) {
-            // Ambil data sesuai rentang tanggal dan kelas
+            // 1. Ambil Data Transaksi (Detail) untuk Tabel
             $incomes = SClassIncome::where('class_id', $class->id)
                                 ->whereBetween('date', [$startDate, $endDate])
                                 ->with('creator')
                                 ->latest('date')
                                 ->get();
-
+            
             $expenses = SClassExpense::where('class_id', $class->id)
                                 ->whereBetween('expense_date', [$startDate, $endDate])
                                 ->with('creator')
                                 ->latest('expense_date')
                                 ->get();
 
-            // Hitung statistik
+            // 2. Hitung Statistik
             $totalIncome = $incomes->sum('amount');
             $totalExpense = $expenses->sum('amount');
             $stats = [
@@ -52,10 +53,44 @@ class ReportController extends Controller
                 'totalExpense' => $totalExpense,
                 'balance' => $totalIncome - $totalExpense,
             ];
+
+            // 3. Siapkan Data Grafik (Area Chart Harian)
+            if ($showChart) {
+                $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
+                $dates = [];
+                $incomeSeries = [];
+                $expenseSeries = [];
+
+                foreach ($period as $date) {
+                    $dateStr = $date->format('Y-m-d');
+                    $dates[] = $date->format('d M'); // Label X: 01 Jan
+                    
+                    // Sum Pemasukan Hari Ini
+                    $inc = $incomes->filter(function ($item) use ($dateStr) {
+                        return $item->date->format('Y-m-d') === $dateStr;
+                    })->sum('amount');
+
+                    // Sum Pengeluaran Hari Ini
+                    $exp = $expenses->filter(function ($item) use ($dateStr) {
+                        return $item->expense_date->format('Y-m-d') === $dateStr;
+                    })->sum('amount');
+
+                    $incomeSeries[] = $inc;
+                    $expenseSeries[] = $exp;
+                }
+
+                $chartData = [
+                    'categories' => $dates,
+                    'series' => [
+                        ['name' => 'Pemasukan', 'data' => $incomeSeries],
+                        ['name' => 'Pengeluaran', 'data' => $expenseSeries]
+                    ]
+                ];
+            }
         }
 
         return view('walikelas.reports.index', compact(
-            'class', 'incomes', 'expenses', 'stats', 'startDate', 'endDate'
+            'class', 'incomes', 'expenses', 'stats', 'startDate', 'endDate', 'chartData', 'showChart'
         ));
     }
 

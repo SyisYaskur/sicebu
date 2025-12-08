@@ -17,26 +17,32 @@
             <div class="card-body">
                 <form action="{{ route('superadmin.reports.index') }}" method="GET">
                     <div class="row g-3">
+
                         {{-- Baris 1 --}}
                         <div class="col-md-3">
-                            <label class="form-label">Dari Tanggal</label>
+                            <label class="form-label fw-semibold">Dari Tanggal</label>
                             <input type="date" name="start_date" class="form-control" value="{{ $startDate }}">
                         </div>
+
                         <div class="col-md-3">
-                            <label class="form-label">Sampai Tanggal</label>
+                            <label class="form-label fw-semibold">Sampai Tanggal</label>
                             <input type="date" name="end_date" class="form-control" value="{{ $endDate }}">
                         </div>
+
                         <div class="col-md-3">
-                            <label class="form-label">Kelas</label>
+                            <label class="form-label fw-semibold">Kelas</label>
                             <select name="class_id" class="form-select select2">
                                 <option value="">-- Semua Kelas --</option>
                                 @foreach($classes as $c)
-                                    <option value="{{ $c->id }}" {{ $classId == $c->id ? 'selected' : '' }}>{{ $c->full_name }}</option>
+                                    <option value="{{ $c->id }}" {{ $classId == $c->id ? 'selected' : '' }}>
+                                        {{ $c->full_name }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
+
                         <div class="col-md-3">
-                            <label class="form-label">Jenis Transaksi</label>
+                            <label class="form-label fw-semibold">Jenis Transaksi</label>
                             <select name="type" class="form-select">
                                 <option value="">Semua (Masuk & Keluar)</option>
                                 <option value="income" {{ $type == 'income' ? 'selected' : '' }}>Hanya Pemasukan</option>
@@ -46,35 +52,72 @@
 
                         {{-- Baris 2 --}}
                         <div class="col-md-3">
-                            <label class="form-label">Pencatat (User)</label>
+                            <label class="form-label fw-semibold">Pencatat (User)</label>
                             <select name="user_id" class="form-select select2">
                                 <option value="">-- Semua User --</option>
                                 @foreach($users as $u)
-                                    <option value="{{ $u->id }}" {{ $userId == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
+                                    <option value="{{ $u->id }}" {{ $userId == $u->id ? 'selected' : '' }}>
+                                        {{ $u->name }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
+
                         <div class="col-md-3">
-                            <label class="form-label">Min. Nominal (Rp)</label>
-                            <input type="text" name="min_amount" class="form-control amount-input" value="{{ $minAmount }}" placeholder="0">
+                            <label class="form-label fw-semibold">Min. Nominal (Rp)</label>
+                            <input type="text" name="min_amount" class="form-control amount-input"
+                                value="{{ $minAmount }}" placeholder="0">
                         </div>
+
                         <div class="col-md-3">
-                            <label class="form-label">Max. Nominal (Rp)</label>
-                            <input type="text" name="max_amount" class="form-control amount-input" value="{{ $maxAmount }}" placeholder="Unlimited">
+                            <label class="form-label fw-semibold">Max. Nominal (Rp)</label>
+                            <input type="text" name="max_amount" class="form-control amount-input"
+                                value="{{ $maxAmount }}" placeholder="Unlimited">
                         </div>
-                        <div class="col-md-3 d-flex align-items-end gap-2">
-                            <button type="submit" name="action" value="filter" class="btn btn-primary flex-grow-1">
-                                <i class="bx bx-search"></i> Filter
-                            </button>
-                            <a href="{{ route('superadmin.reports.index') }}" class="btn btn-outline-secondary" title="Reset">
-                                <i class="bx bx-refresh"></i>
-                            </a>
-                        </div>
+
+                        {{-- Baris 3: Toggle + Tombol --}}
+                        <div class="col-md-12 d-flex flex-wrap align-items-center justify-content-between mt-2">
+
+                            {{-- Toggle Grafik --}}
+                            <div class="form-check form-switch my-2">
+                                <input class="form-check-input" type="checkbox" id="show_chart" name="show_chart"
+                                    value="1" {{ $showChart ? 'checked' : '' }} onchange="this.form.submit()">
+
+                                <label class="form-check-label fw-bold text-primary" for="show_chart">
+                                    <i class="bx bx-bar-chart-alt-2 me-1"></i>
+                                    Tampilkan Grafik Analisis Visual
+                                </label>
+                            </div>
+
+                            {{-- Tombol Filter + Reset --}}
+                            <div class="d-flex gap-2 my-2">
+                                <button type="submit" name="action" value="filter" class="btn btn-primary px-4">
+                                    <i class="bx bx-search"></i> Filter
+                                </button>
+
+                                <a href="{{ route('superadmin.reports.index') }}" class="btn btn-outline-secondary" title="Reset">
+                                    <i class="bx bx-refresh"></i>
+                                </a>
+                            </div>
+                        </div>  
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
+    {{-- GRAFIK ANALISIS --}}
+    @if($showChart && $chartData)
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Analisis Tren Keuangan</h5>
+            <span class="badge bg-label-primary">Periode: {{ \Carbon\Carbon::parse($startDate)->format('d M') }} - {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }}</span>
+        </div>
+        <div class="card-body">
+            <div id="financialChart" style="min-height: 350px;"></div>
+        </div>
+    </div>
+    @endif
 
     {{-- 2. STATISTIK DASHBOARD MINI --}}
     <div class="row g-4 mb-4">
@@ -181,6 +224,7 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<script src="{{ asset('assets/vendor/libs/apex-charts/apexcharts.js') }}"></script>
 <script>
     $(document).ready(function() { $('.select2').select2({ theme: 'bootstrap-5', width: '100%' }); });
     
@@ -191,4 +235,65 @@
         });
     });
 </script>
+@if($showChart && $chartData)
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const chartOptions = {
+        series: @json($chartData['series']), // Data dinamis dari controller
+        chart: {
+            height: 350,
+            type: 'area',
+            toolbar: { show: false },
+            zoom: { enabled: false }
+        },
+        dataLabels: { enabled: false },
+        stroke: { curve: 'smooth', width: 2 },
+        xaxis: {
+            categories: @json($chartData['categories']), // Tanggal
+            axisBorder: { show: false },
+            axisTicks: { show: false }
+        },
+        yaxis: {
+            labels: {
+                formatter: function (value) {
+                    // Format K (Ribu) / M (Juta)
+                    if (value >= 1000000) return (value / 1000000).toFixed(1) + "Jt";
+                    if (value >= 1000) return (value / 1000).toFixed(0) + "rb";
+                    return value;
+                }
+            },
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.7,
+                opacityTo: 0.2,
+                stops: [0, 90, 100]
+            }
+        },
+        // Warna: Hijau (Pemasukan), Merah (Pengeluaran)
+        // Urutannya tergantung series mana yang dikirim controller.
+        // Karena controller mengirim Income dulu lalu Expense (jika ada dua-duanya),
+        // maka array warna harus [Hijau, Merah].
+        colors: ['#00E396', '#FF4560'], 
+        tooltip: {
+            y: {
+                formatter: function (val) {
+                    return "Rp " + val.toLocaleString('id-ID');
+                }
+            }
+        },
+        grid: {
+            borderColor: '#f1f1f1',
+            padding: { top: 0, right: 0, bottom: 0, left: 10 }
+        },
+        legend: { position: 'top', horizontalAlign: 'right' }
+    };
+
+    const chart = new ApexCharts(document.querySelector("#financialChart"), chartOptions);
+    chart.render();
+});
+</script>
+@endif
 @endpush

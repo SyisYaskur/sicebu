@@ -200,7 +200,6 @@ class StudentController extends Controller
     {
         DB::transaction(function () use ($student) {
             $student->classAssignments()->delete();
-            SClassIncome::where('student_id', $student->id)->delete();
             $student->delete();
         });
 

@@ -4,204 +4,183 @@ namespace App\Http\Controllers\Pengelola;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\RefClass;
 use App\Models\SClassIncome;
 use App\Models\SClassExpense;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Carbon\Carbon;
+use App\Models\RefClass;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\Pengelola\FinancialReportExport;
 
 class ReportController extends Controller
 {
-    public function index(Request $request)
+   public function index(Request $request)
     {
+        // --- 1. LOAD DATA UTAMA UNTUK FILTER ---
         $classes = RefClass::orderBy('academic_level')->orderBy('name')->get();
-        
+        $users = User::orderBy('name')->get(); 
+
+        // --- 2. AMBIL PARAMETER FILTER ---
         $startDate = $request->input('start_date', date('Y-m-01'));
         $endDate = $request->input('end_date', date('Y-m-d'));
-        $selectedClassId = $request->input('class_id');
-        $filterCategory = $request->input('filter_category');
+        $classId = $request->input('class_id');
+        $type = $request->input('type'); 
+        $minAmount = $request->input('min_amount');
+        $maxAmount = $request->input('max_amount');
+        $userId = $request->input('user_id');
+        $showChart = $request->boolean('show_chart');
 
-        // --- MODE 1: MIKRO (Rekapitulasi Harian Kelas) ---
-        if ($selectedClassId) {
-            $class = RefClass::find($selectedClassId);
+        // --- 3. BUILD QUERY (BASE) ---
+        $incomesQuery = SClassIncome::query()
+            ->join('ref_classes', 's_class_incomes.class_id', '=', 'ref_classes.id')
+            ->join('core_users', 's_class_incomes.created_by', '=', 'core_users.id')
+            ->whereBetween('s_class_incomes.date', [$startDate, $endDate]);
+
+        $expensesQuery = SClassExpense::query()
+            ->join('ref_classes', 's_class_expenses.class_id', '=', 'ref_classes.id')
+            ->join('core_users', 's_class_expenses.created_by', '=', 'core_users.id')
+            ->whereBetween('s_class_expenses.expense_date', [$startDate, $endDate]);
+
+        // --- 4. FILTER ---
+        if ($classId) {
+            $incomesQuery->where('s_class_incomes.class_id', $classId);
+            $expensesQuery->where('s_class_expenses.class_id', $classId);
+        }
+        if ($userId) {
+            $incomesQuery->where('s_class_incomes.created_by', $userId);
+            $expensesQuery->where('s_class_expenses.created_by', $userId);
+        }
+        if ($minAmount) {
+            $val = str_replace('.', '', $minAmount);
+            $incomesQuery->where('s_class_incomes.amount', '>=', $val);
+            $expensesQuery->where('s_class_expenses.amount', '>=', $val);
+        }
+        if ($maxAmount) {
+            $val = str_replace('.', '', $maxAmount);
+            $incomesQuery->where('s_class_incomes.amount', '<=', $val);
+            $expensesQuery->where('s_class_expenses.amount', '<=', $val);
+        }
+
+        // --- 5. CHART ---
+        $chartData = null;
+        if ($showChart) {
+            $chartInc = clone $incomesQuery;
+            $chartExp = clone $expensesQuery;
+
+            $dailyInc = $chartInc->selectRaw('DATE(s_class_incomes.date) as day, SUM(s_class_incomes.amount) as total')
+                ->groupBy('day')->pluck('total', 'day');
             
-            // 1. Hitung Saldo Awal (Saldo sebelum tanggal filter)
-            $prevIncome = SClassIncome::where('class_id', $selectedClassId)
-                ->where('date', '<', $startDate)
-                ->sum('amount');
-            $prevExpense = SClassExpense::where('class_id', $selectedClassId)
-                ->where('expense_date', '<', $startDate)
-                ->sum('amount');
-            $openingBalance = $prevIncome - $prevExpense;
+            $dailyExp = $chartExp->selectRaw('DATE(s_class_expenses.expense_date) as day, SUM(s_class_expenses.amount) as total')
+                ->groupBy('day')->pluck('total', 'day');
 
-            // 2. Ambil Data Transaksi (Group by Date di Database)
-            $incomes = SClassIncome::where('class_id', $selectedClassId)
-                ->whereBetween('date', [$startDate, $endDate])
-                ->selectRaw('DATE(date) as day_date, sum(amount) as total_income')
-                ->groupBy('day_date')
-                ->get()
-                ->keyBy('day_date'); // Key menggunakan string tanggal 'YYYY-MM-DD'
+            $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
 
-            $expenses = SClassExpense::where('class_id', $selectedClassId)
-                ->whereBetween('expense_date', [$startDate, $endDate])
-                ->selectRaw('DATE(expense_date) as day_date, sum(amount) as total_expense')
-                ->groupBy('day_date')
-                ->get()
-                ->keyBy('day_date');
+            $dates = [];
+            $incSeries = [];
+            $expSeries = [];
 
-            // 3. Gabungkan Tanggal (Union Keys) & Urutkan ASC untuk perhitungan saldo
-            $allDates = $incomes->keys()->merge($expenses->keys())->unique()->sort();
-
-            // 4. Proses Hitung Saldo (Kronologis: Lama -> Baru)
-            $runningBalance = $openingBalance;
-            $totalPeriodIncome = 0;
-            $totalPeriodExpense = 0;
-            $processedData = collect([]);
-
-            foreach ($allDates as $dateStr) {
-                $inc = isset($incomes[$dateStr]) ? $incomes[$dateStr]->total_income : 0;
-                $exp = isset($expenses[$dateStr]) ? $expenses[$dateStr]->total_expense : 0;
-
-                $runningBalance += ($inc - $exp);
-                $totalPeriodIncome += $inc;
-                $totalPeriodExpense += $exp;
-
-                $processedData->push((object) [
-                    'date' => Carbon::parse($dateStr),
-                    'income' => $inc,
-                    'expense' => $exp,
-                    'balance' => $runningBalance,
-                ]);
+            foreach ($period as $date) {
+                $d = $date->format('Y-m-d');
+                $dates[] = $date->format('d M');
+                
+                $incSeries[] = $dailyInc[$d] ?? 0;
+                $expSeries[] = $dailyExp[$d] ?? 0;
             }
 
-            // 5. Balik Urutan untuk Tampilan (Terbaru di Atas)
-            $displayData = $processedData->sortByDesc('date')->values();
+            $series = [];
+            if (!$type || $type == 'income') {
+                $series[] = ['name' => 'Pemasukan', 'data' => $incSeries];
+            }
+            if (!$type || $type == 'expense') {
+                $series[] = ['name' => 'Pengeluaran', 'data' => $expSeries];
+            }
 
-            // 6. Manual Pagination
-            $currentPage = LengthAwarePaginator::resolveCurrentPage();
-            $perPage = 20;
-            $currentItems = $displayData->slice(($currentPage - 1) * $perPage, $perPage)->all();
-            $paginatedData = new LengthAwarePaginator($currentItems, $displayData->count(), $perPage, $currentPage, [
-                'path' => LengthAwarePaginator::resolveCurrentPath(),
-                'query' => $request->query(),
-            ]);
-            $paginatedData->useBootstrapFive();
-
-            $stats = [
-                'openingBalance' => $openingBalance,
-                'totalIncome' => $totalPeriodIncome,
-                'totalExpense' => $totalPeriodExpense,
-                'finalBalance' => $runningBalance,
+            $chartData = [
+                'categories' => $dates,
+                'series' => $series
             ];
-            
-            return view('pengelola.reports.index', compact(
-                'classes', 'startDate', 'endDate', 'selectedClassId', 'filterCategory',
-                'class', 'paginatedData', 'stats'
-            ));
         }
 
-        // --- MODE 2: MAKRO (Rekapitulasi Semua Kelas) ---
-        else {
-            $recapData = RefClass::withSum(['incomes' => function($q) use ($startDate, $endDate) {
-                                    $q->whereBetween('date', [$startDate, $endDate]);
-                                }], 'amount')
-                                ->withSum(['expenses' => function($q) use ($startDate, $endDate) {
-                                    $q->whereBetween('expense_date', [$startDate, $endDate]);
-                                }], 'amount')
-                                ->orderBy('name')
-                                ->paginate(20);
+        // --- 6. TABEL DATA ---
+        $incomesQuery->select(
+            's_class_incomes.date',
+            's_class_incomes.amount',
+            's_class_incomes.description',
+            's_class_incomes.created_at',
+            'ref_classes.name as class_name_raw',
+            'ref_classes.academic_level',
+            'core_users.name as pic_name',
+            DB::raw("'income' as type"),
+            DB::raw("NULL as recipient")
+        );
 
-            $grandTotalIncome = SClassIncome::whereBetween('date', [$startDate, $endDate])->sum('amount');
-            $grandTotalExpense = SClassExpense::whereBetween('expense_date', [$startDate, $endDate])->sum('amount');
+        $expensesQuery->select(
+            's_class_expenses.expense_date as date',
+            's_class_expenses.amount',
+            's_class_expenses.description',
+            's_class_expenses.created_at',
+            'ref_classes.name as class_name_raw',
+            'ref_classes.academic_level',
+            'core_users.name as pic_name',
+            DB::raw("'expense' as type"),
+            's_class_expenses.recipient'
+        );
 
-            return view('pengelola.reports.index', compact(
-                'classes', 'startDate', 'endDate', 'selectedClassId', 'filterCategory',
-                'recapData', 'grandTotalIncome', 'grandTotalExpense'
-            ));
-        }
-    }
-
-    public function downloadPDF(Request $request)
-    {
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
-        $selectedClassId = $request->input('class_id');
-
-        if ($selectedClassId) {
-            // --- PDF MIKRO (Harian) ---
-            $class = RefClass::find($selectedClassId);
-
-            // Copy Logic dari Index (Tanpa Pagination)
-            $prevIncome = SClassIncome::where('class_id', $selectedClassId)->where('date', '<', $startDate)->sum('amount');
-            $prevExpense = SClassExpense::where('class_id', $selectedClassId)->where('expense_date', '<', $startDate)->sum('amount');
-            $openingBalance = $prevIncome - $prevExpense;
-
-            $incomes = SClassIncome::where('class_id', $selectedClassId)
-                ->whereBetween('date', [$startDate, $endDate])
-                ->selectRaw('DATE(date) as day_date, sum(amount) as total_income')
-                ->groupBy('day_date')->get()->keyBy('day_date');
-
-            $expenses = SClassExpense::where('class_id', $selectedClassId)
-                ->whereBetween('expense_date', [$startDate, $endDate])
-                ->selectRaw('DATE(expense_date) as day_date, sum(amount) as total_expense')
-                ->groupBy('day_date')->get()->keyBy('day_date');
-
-            $allDates = $incomes->keys()->merge($expenses->keys())->unique()->sort();
-
-            $runningBalance = $openingBalance;
-            $processedData = collect([]);
-            
-            // Baris Saldo Awal
-            $processedData->push((object) [
-                'date' => Carbon::parse($startDate)->subDay(),
-                'income' => 0,
-                'expense' => 0,
-                'balance' => $openingBalance,
-                'is_opening' => true 
-            ]);
-
-            foreach ($allDates as $dateStr) {
-                $inc = isset($incomes[$dateStr]) ? $incomes[$dateStr]->total_income : 0;
-                $exp = isset($expenses[$dateStr]) ? $expenses[$dateStr]->total_expense : 0;
-                $runningBalance += ($inc - $exp);
-
-                $processedData->push((object) [
-                    'date' => Carbon::parse($dateStr),
-                    'income' => $inc,
-                    'expense' => $exp,
-                    'balance' => $runningBalance,
-                    'is_opening' => false
-                ]);
-            }
-
-            // Sort DESC untuk PDF juga
-            $finalData = $processedData->sortByDesc('date');
-
-            $pdf = Pdf::loadView('pengelola.reports.pdf_micro', [
-                'class' => $class,
-                'processedData' => $finalData,
-                'startDate' => $startDate,
-                'endDate' => $endDate
-            ]);
-            return $pdf->stream('Laporan Harian Kelas ' . $class->full_name . '.pdf');
-
+        // Gabungkan
+        if ($type == 'income') {
+            $transactions = $incomesQuery->orderBy('date', 'desc')->orderBy('created_at', 'desc')->get();
+        } elseif ($type == 'expense') {
+            $transactions = $expensesQuery->orderBy('date', 'desc')->orderBy('created_at', 'desc')->get();
         } else {
-            // --- PDF MAKRO (Tetap Sama) ---
-            $recapData = RefClass::withSum(['incomes' => function($q) use ($startDate, $endDate) {
-                                    $q->whereBetween('date', [$startDate, $endDate]);
-                                }], 'amount')
-                                ->withSum(['expenses' => function($q) use ($startDate, $endDate) {
-                                    $q->whereBetween('expense_date', [$startDate, $endDate]);
-                                }], 'amount')
-                                ->orderBy('name')->get();
-
-            $grandTotalIncome = $recapData->sum('incomes_sum_amount');
-            $grandTotalExpense = $recapData->sum('expenses_sum_amount');
-
-            $pdf = Pdf::loadView('pengelola.reports.pdf_macro', compact('recapData', 'startDate', 'endDate', 'grandTotalIncome', 'grandTotalExpense'));
-            return $pdf->stream('Laporan Rekapitulasi Sekolah.pdf');
+            $transactions = $incomesQuery->union($expensesQuery)
+                ->orderBy('date', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->get();
         }
+
+        $transactions->transform(function($item) {
+            $item->class_name = $item->academic_level . ' ' . $item->class_name_raw;
+            return $item;
+        });
+
+        // --- 7. STATISTIK ---
+        $totalIncome = $transactions->where('type', 'income')->sum('amount');
+        $totalExpense = $transactions->where('type', 'expense')->sum('amount');
+        $stats = [
+            'totalIncome' => $totalIncome,
+            'totalExpense' => $totalExpense,
+            'netCashFlow' => $totalIncome - $totalExpense,
+            'transactionCount' => $transactions->count(),
+        ];
+
+        // --- 8. EXPORT ---
+        if ($request->has('export')) {
+            $filters = [
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+                'className' => $classId ? RefClass::find($classId)->full_name : 'Semua Kelas',
+                'categoryName' => $type ?: 'Semua',
+            ];
+
+            if ($request->export == 'pdf') {
+                $pdf = Pdf::loadView('Pengelola.reports.pdf_ledger', compact('transactions', 'stats', 'filters'));
+                $pdf->setPaper('a4', 'landscape');
+                return $pdf->stream('Laporan_Keuangan_Lengkap.pdf');
+            }
+            
+            if ($request->export == 'excel') {
+                return Excel::download(
+                    new \App\Exports\SuperAdmin\FinancialReportExport($stats, $transactions, $filters), 
+                    'Laporan_Keuangan.xlsx'
+                );
+            }
+        }
+
+        return view('Pengelola.reports.index', compact(
+            'classes', 'users', 'transactions', 'stats', 
+            'startDate', 'endDate', 'classId', 'type', 'userId', 'minAmount', 'maxAmount',
+            'showChart', 'chartData'
+        ));
     }
 }
