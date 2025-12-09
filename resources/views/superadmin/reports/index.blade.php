@@ -155,6 +155,19 @@
                 </div>
             </div>
         </div>
+        <div class="card mb-4 bg-primary text-white shadow-sm">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+            <div>
+                <i class="bx bxs-bank fs-4 me-2 align-middle"></i>
+                <span class="fw-bold text-uppercase align-middle">Total Saldo Sekolah (Per {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }})</span>
+                @if($classId)
+                    <span class="badge bg-white text-primary ms-2">{{ \App\Models\RefClass::find($classId)->full_name }}</span>
+                @endif
+            </div>
+            <div>
+                <h3 class="mb-0 text-white fw-bold">Rp {{ number_format($stats['endingBalance'], 0, ',', '.') }}</h3>
+            </div>
+        </div>
     </div>
 
     {{-- 3. TABEL DATA & EXPORT --}}

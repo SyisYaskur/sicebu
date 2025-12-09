@@ -28,6 +28,7 @@ use App\Http\Controllers\SuperAdmin\ExpenseController as AdminExpense;
 use App\Http\Controllers\SuperAdmin\ExpenseController as AdminExpenseController;
 use App\Http\Controllers\SuperAdmin\ReportController as AdminReport;
 
+Route::get('/api/chart-data', [App\Http\Controllers\WelcomeController::class, 'chartData'])->name('api.chart');
 Route::get('/', [WelcomeController::class, 'index'])->name('welcome');
 
 // Dashboard umum setelah login

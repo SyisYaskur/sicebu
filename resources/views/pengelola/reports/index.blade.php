@@ -95,7 +95,7 @@
                                     <i class="bx bx-search"></i> Filter
                                 </button>
 
-                                <a href="{{ route('superadmin.reports.index') }}" class="btn btn-outline-secondary" title="Reset">
+                                <a href="{{ route('pengelola.reports.index') }}" class="btn btn-outline-secondary" title="Reset">
                                     <i class="bx bx-refresh"></i>
                                 </a>
                             </div>
@@ -153,6 +153,19 @@
                     <span class="d-block fw-semibold mb-1">Total Transaksi</span>
                     <h3 class="card-title mb-0 text-info">{{ $stats['transactionCount'] }}</h3>
                 </div>
+            </div>
+        </div>
+        <div class="card mb-4 bg-primary text-white shadow-sm">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+            <div>
+                <i class="bx bxs-bank fs-4 me-2 align-middle"></i>
+                <span class="fw-bold text-uppercase align-middle">Total Saldo Sekolah (Per {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }})</span>
+                @if($classId)
+                    <span class="badge bg-white text-primary ms-2">{{ \App\Models\RefClass::find($classId)->full_name }}</span>
+                @endif
+            </div>
+            <div>
+                <h3 class="mb-0 text-white fw-bold">Rp {{ number_format($stats['endingBalance'], 0, ',', '.') }}</h3>
             </div>
         </div>
     </div>

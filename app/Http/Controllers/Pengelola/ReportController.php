@@ -11,7 +11,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\Pengelola\FinancialReportExport;
+use App\Exports\superadmin\FinancialReportExport;
 
 class ReportController extends Controller
 {
@@ -30,6 +30,7 @@ class ReportController extends Controller
         $maxAmount = $request->input('max_amount');
         $userId = $request->input('user_id');
         $showChart = $request->boolean('show_chart');
+        $viewMode = $request->input('view_mode', 'ledger');
 
         // --- 3. BUILD QUERY (BASE) ---
         $incomesQuery = SClassIncome::query()
@@ -42,7 +43,7 @@ class ReportController extends Controller
             ->join('core_users', 's_class_expenses.created_by', '=', 'core_users.id')
             ->whereBetween('s_class_expenses.expense_date', [$startDate, $endDate]);
 
-        // --- 4. FILTER ---
+        // --- 4. TERAPKAN FILTER TAMBAHAN (KE DUA QUERY) ---
         if ($classId) {
             $incomesQuery->where('s_class_incomes.class_id', $classId);
             $expensesQuery->where('s_class_expenses.class_id', $classId);
@@ -62,81 +63,44 @@ class ReportController extends Controller
             $expensesQuery->where('s_class_expenses.amount', '<=', $val);
         }
 
-        // --- 5. CHART ---
+        // --- 5. SIAPKAN DATA GRAFIK ---
         $chartData = null;
         if ($showChart) {
             $chartInc = clone $incomesQuery;
             $chartExp = clone $expensesQuery;
 
-            $dailyInc = $chartInc->selectRaw('DATE(s_class_incomes.date) as day, SUM(s_class_incomes.amount) as total')
-                ->groupBy('day')->pluck('total', 'day');
-            
-            $dailyExp = $chartExp->selectRaw('DATE(s_class_expenses.expense_date) as day, SUM(s_class_expenses.amount) as total')
-                ->groupBy('day')->pluck('total', 'day');
+            $dailyInc = $chartInc->selectRaw('DATE(s_class_incomes.date) as day, SUM(s_class_incomes.amount) as total')->groupBy('day')->pluck('total', 'day');
+            $dailyExp = $chartExp->selectRaw('DATE(s_class_expenses.expense_date) as day, SUM(s_class_expenses.amount) as total')->groupBy('day')->pluck('total', 'day');
 
             $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
-
-            $dates = [];
-            $incSeries = [];
-            $expSeries = [];
+            $dates = []; $incSeries = []; $expSeries = [];
 
             foreach ($period as $date) {
                 $d = $date->format('Y-m-d');
                 $dates[] = $date->format('d M');
-                
                 $incSeries[] = $dailyInc[$d] ?? 0;
                 $expSeries[] = $dailyExp[$d] ?? 0;
             }
 
-            $series = [];
-            if (!$type || $type == 'income') {
-                $series[] = ['name' => 'Pemasukan', 'data' => $incSeries];
-            }
-            if (!$type || $type == 'expense') {
-                $series[] = ['name' => 'Pengeluaran', 'data' => $expSeries];
-            }
-
             $chartData = [
                 'categories' => $dates,
-                'series' => $series
+                'series' => [
+                    ['name' => 'Pemasukan', 'data' => $incSeries],
+                    ['name' => 'Pengeluaran', 'data' => $expSeries]
+                ]
             ];
         }
 
-        // --- 6. TABEL DATA ---
-        $incomesQuery->select(
-            's_class_incomes.date',
-            's_class_incomes.amount',
-            's_class_incomes.description',
-            's_class_incomes.created_at',
-            'ref_classes.name as class_name_raw',
-            'ref_classes.academic_level',
-            'core_users.name as pic_name',
-            DB::raw("'income' as type"),
-            DB::raw("NULL as recipient")
-        );
+        // --- 6. DATA UNTUK TABEL ---
+        $incomesQuery->select('s_class_incomes.date', 's_class_incomes.amount', 's_class_incomes.description', 's_class_incomes.created_at', 'ref_classes.name as class_name_raw', 'ref_classes.academic_level', 'core_users.name as pic_name', DB::raw("'income' as type"), DB::raw("NULL as recipient"));
+        $expensesQuery->select('s_class_expenses.expense_date as date', 's_class_expenses.amount', 's_class_expenses.description', 's_class_expenses.created_at', 'ref_classes.name as class_name_raw', 'ref_classes.academic_level', 'core_users.name as pic_name', DB::raw("'expense' as type"), 's_class_expenses.recipient');
 
-        $expensesQuery->select(
-            's_class_expenses.expense_date as date',
-            's_class_expenses.amount',
-            's_class_expenses.description',
-            's_class_expenses.created_at',
-            'ref_classes.name as class_name_raw',
-            'ref_classes.academic_level',
-            'core_users.name as pic_name',
-            DB::raw("'expense' as type"),
-            's_class_expenses.recipient'
-        );
-
-        // Gabungkan
         if ($type == 'income') {
             $transactions = $incomesQuery->orderBy('date', 'desc')->orderBy('created_at', 'desc')->get();
         } elseif ($type == 'expense') {
             $transactions = $expensesQuery->orderBy('date', 'desc')->orderBy('created_at', 'desc')->get();
         } else {
-            $transactions = $incomesQuery->union($expensesQuery)
-                ->orderBy('date', 'desc')
-                ->orderBy('created_at', 'desc')
-                ->get();
+            $transactions = $incomesQuery->union($expensesQuery)->orderBy('date', 'desc')->orderBy('created_at', 'desc')->get();
         }
 
         $transactions->transform(function($item) {
@@ -144,19 +108,36 @@ class ReportController extends Controller
             return $item;
         });
 
-        // --- 7. STATISTIK ---
+        // --- 7. HITUNG STATISTIK & SALDO AKHIR ---
         $totalIncome = $transactions->where('type', 'income')->sum('amount');
         $totalExpense = $transactions->where('type', 'expense')->sum('amount');
+        $netCashFlow = $totalIncome - $totalExpense;
+
+        // HITUNG SALDO AWAL (Sebelum Start Date)
+        // Agar kita tahu saldo akhir yang sebenarnya (Akumulatif)
+        $qPrevInc = SClassIncome::where('date', '<', $startDate);
+        $qPrevExp = SClassExpense::where('expense_date', '<', $startDate);
+
+        // Terapkan filter kelas juga ke saldo awal agar akurat
+        if ($classId) {
+            $qPrevInc->where('class_id', $classId);
+            $qPrevExp->where('class_id', $classId);
+        }
+        
+        $openingBalance = $qPrevInc->sum('amount') - $qPrevExp->sum('amount');
+        $endingBalance = $openingBalance + $netCashFlow;
+
         $stats = [
             'totalIncome' => $totalIncome,
             'totalExpense' => $totalExpense,
-            'netCashFlow' => $totalIncome - $totalExpense,
+            'netCashFlow' => $netCashFlow,
             'transactionCount' => $transactions->count(),
+            'endingBalance' => $endingBalance // <-- DATA BARU
         ];
 
         // --- 8. EXPORT ---
         if ($request->has('export')) {
-            $filters = [
+             $filters = [
                 'startDate' => $startDate,
                 'endDate' => $endDate,
                 'className' => $classId ? RefClass::find($classId)->full_name : 'Semua Kelas',
@@ -168,12 +149,8 @@ class ReportController extends Controller
                 $pdf->setPaper('a4', 'landscape');
                 return $pdf->stream('Laporan_Keuangan_Lengkap.pdf');
             }
-            
             if ($request->export == 'excel') {
-                return Excel::download(
-                    new \App\Exports\SuperAdmin\FinancialReportExport($stats, $transactions, $filters), 
-                    'Laporan_Keuangan.xlsx'
-                );
+                return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\superadmin\FinancialReportExport($stats, $transactions, $filters), 'Laporan_Keuangan.xlsx');
             }
         }
 
