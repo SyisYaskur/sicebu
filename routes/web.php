@@ -79,6 +79,8 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('superadmin')->name('sup
     Route::resource('expenses', AdminExpense::class)->except(['show']);
     Route::resource('expenses', AdminExpenseController::class)->except(['show']);
     Route::get('reports', [AdminReport::class, 'index'])->name('reports.index');
+    Route::resource('disbursements', \App\Http\Controllers\Superadmin\DisbursementController::class);
+    Route::get('disbursements/{disbursement}/pdf', [\App\Http\Controllers\SuperAdmin\DisbursementController::class, 'downloadPDF'])->name('disbursements.pdf');
 });
 
 // Grup Route untuk Wali Kelas

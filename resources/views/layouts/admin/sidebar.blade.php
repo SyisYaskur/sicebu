@@ -51,17 +51,24 @@
       <span class="menu-header-text">Keuangan</span>
     </li>
 
+    <li class="menu-item {{ request()->routeIs('superadmin.disbursements.*') ? 'active' : '' }}">
+      <a href="{{ route('superadmin.disbursements.index') }}" class="menu-link">
+        <i class="menu-icon tf-icons bx bx-paper-plane"></i>
+        <div class="text-truncate">Penyaluran Dana</div>
+      </a>
+    </li>
+
     <li class="menu-item {{ request()->routeIs('superadmin.incomes.*') ? 'active' : '' }}">
       <a href="{{ route('superadmin.incomes.index') }}" class="menu-link">
         <i class="menu-icon tf-icons bx bx-wallet"></i>
-        <div class="text-truncate">manajemen Pemasukan</div>
+        <div class="text-truncate">Manajemen Pemasukan</div>
       </a>
     </li>
 
     <li class="menu-item {{ request()->routeIs('superadmin.expenses.*') ? 'active' : '' }}">
       <a href="{{ route('superadmin.expenses.index') }}" class="menu-link">
         <i class="menu-icon tf-icons bx bx-cart"></i>
-        <div class="text-truncate">manajemen Pengeluaran</div>
+        <div class="text-truncate">Manajemen Pengeluaran</div>
       </a>
     </li>
     

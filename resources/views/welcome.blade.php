@@ -36,7 +36,7 @@
 
     <section class="hero-mini">
         <div class="container">
-            <h3 class="fw-bold text-dark mb-2">SICEBU</h3>
+            <h3 class="fw-bold text-dark mb-2">SICEBU SMKN 1 TALAGA</h3>
             <p class="text-muted mb-0 small mx-auto" style="max-width: 600px;">
                 Pantau tren pemasukan dan pengeluaran dana kelas secara real-time.
             </p>
